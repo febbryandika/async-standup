@@ -6,7 +6,7 @@ const url = process.env.DATABASE_URL ?? ''
 
 export default defineConfig({
   dialect: 'postgresql',
-  schema: './lib/db/schema.ts',
+  schema: ['./lib/db/schema.ts', './lib/db/auth-schema.ts'],
   out: './drizzle',
   dbCredentials: { url },
 })
