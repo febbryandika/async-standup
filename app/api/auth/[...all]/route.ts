@@ -1,8 +1,4 @@
-// Better Auth's catch-all handler is wired up in SPEC §13 step 3.
-export function GET() {
-  return new Response('Not implemented', { status: 501 })
-}
+import { toNextJsHandler } from 'better-auth/next-js'
+import { auth } from '@/lib/auth'
 
-export function POST() {
-  return new Response('Not implemented', { status: 501 })
-}
+export const { GET, POST } = toNextJsHandler(auth)
