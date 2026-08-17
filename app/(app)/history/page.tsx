@@ -5,6 +5,7 @@ import { formatDateLong, parseCursorParam } from '@/lib/date'
 import { listMyStandups } from '@/lib/queries'
 import { requireMember } from '@/lib/session'
 import { Button } from '@/components/ui/button'
+import { EmptyState } from '@/components/empty-state'
 import { StandupCard } from '@/components/standup-card'
 
 export const metadata: Metadata = { title: 'History' }
@@ -33,23 +34,24 @@ export default async function HistoryPage({
         </h2>
 
         {items.length === 0 ? (
-          <p className="mt-6 text-sm text-muted-foreground">
+          // Two empty states, not one: reaching the end of the cursor is a
+          // different thing from never having posted, and only the second one
+          // should send someone to the form.
+          <div className="mt-6">
             {before ? (
-              <>
-                No older updates.{' '}
+              <EmptyState title="No older updates">
                 <Link href="/history" className="underline">
                   Back to the newest
                 </Link>
-              </>
+              </EmptyState>
             ) : (
-              <>
-                No standups yet —{' '}
+              <EmptyState title="No standups yet">
                 <Link href="/" className="underline">
-                  post your first one
+                  Post your first one
                 </Link>
-              </>
+              </EmptyState>
             )}
-          </p>
+          </div>
         ) : (
           <ul className="mt-6 grid gap-4">
             {items.map((standup) => (
