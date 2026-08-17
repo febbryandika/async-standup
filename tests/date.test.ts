@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import { todayInTimezone } from '@/lib/date'
+import { formatDateLong, todayInTimezone } from '@/lib/date'
 
 // SPEC §12 — implemented alongside lib/date.ts.
 describe('todayInTimezone', () => {
@@ -30,5 +30,25 @@ describe('todayInTimezone', () => {
     vi.setSystemTime(new Date('2026-03-08T00:00:00Z'))
 
     expect(todayInTimezone('Asia/Tokyo')).toBe('2026-03-08')
+  })
+})
+
+describe('formatDateLong', () => {
+  it('renders a YYYY-MM-DD string as a long date', () => {
+    expect(formatDateLong('2026-08-17')).toBe('Monday, 17 August 2026')
+  })
+
+  it('does not shift the day for a negative-offset local timezone', () => {
+    // `new Date('2026-08-17')` is UTC midnight, so formatting it in a zone
+    // behind UTC would render the 16th. The stored date is a calendar date in
+    // the team's zone and must survive display unchanged.
+    const original = process.env.TZ
+    process.env.TZ = 'America/Los_Angeles'
+
+    try {
+      expect(formatDateLong('2026-08-17')).toContain('17 August 2026')
+    } finally {
+      process.env.TZ = original
+    }
   })
 })

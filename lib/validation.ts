@@ -37,9 +37,25 @@ export type LoginInput = z.infer<typeof loginSchema>
 export type RegisterInput = z.infer<typeof registerSchema>
 
 export const standupSchema = z.object({
-  yesterday: z.string().trim().min(1).max(2000),
-  today: z.string().trim().min(1).max(2000),
-  blockers: z.string().trim().max(2000).optional().or(z.literal('')),
+  yesterday: z
+    .string()
+    .trim()
+    .min(1, 'Say what you worked on yesterday')
+    .max(2000, 'Use 2000 characters or fewer'),
+  today: z
+    .string()
+    .trim()
+    .min(1, 'Say what you’re working on today')
+    .max(2000, 'Use 2000 characters or fewer'),
+  // `.or(z.literal(''))` is redundant on its own — the left branch already
+  // accepts '' — but it is what SPEC §5.1 specifies and it costs nothing: Zod
+  // still surfaces the left branch's `too_big` issue, message and all.
+  blockers: z
+    .string()
+    .trim()
+    .max(2000, 'Use 2000 characters or fewer')
+    .optional()
+    .or(z.literal('')),
 })
 
 export const joinTeamSchema = z.object({
@@ -65,5 +81,6 @@ export const createTeamSchema = z.object({
     .default(DEFAULT_TIMEZONE),
 })
 
+export type StandupInput = z.infer<typeof standupSchema>
 export type JoinTeamInput = z.infer<typeof joinTeamSchema>
 export type CreateTeamInput = z.input<typeof createTeamSchema>
