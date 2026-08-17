@@ -78,6 +78,7 @@ export async function upsertStandupAction(
 
   revalidatePath('/')
   revalidatePath('/team')
+  revalidatePath('/history')
 
   return { saved: true }
 }

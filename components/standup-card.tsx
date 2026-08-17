@@ -1,3 +1,5 @@
+import type { ReactNode } from 'react'
+
 import { Badge } from '@/components/ui/badge'
 import {
   Card,
@@ -14,7 +16,12 @@ export type StandupCardEntry = {
 }
 
 type StandupCardProps = {
-  name: string
+  /**
+   * Whatever identifies this card, rendered inside its <h3>. The team feed
+   * passes a member's name; /history passes a <time>, because there every card
+   * is the same person and the date is what tells them apart.
+   */
+  heading: ReactNode
   standup: StandupCardEntry | null
 }
 
@@ -29,7 +36,7 @@ function Field({ label, value }: { label: string; value: string }) {
   )
 }
 
-export function StandupCard({ name, standup }: StandupCardProps) {
+export function StandupCard({ heading, standup }: StandupCardProps) {
   const hasBlockers = Boolean(standup?.blockers)
 
   return (
@@ -40,7 +47,7 @@ export function StandupCard({ name, standup }: StandupCardProps) {
       <CardHeader>
         {/* CardTitle renders a div, so the real heading goes inside it. */}
         <CardTitle>
-          <h3>{name}</h3>
+          <h3>{heading}</h3>
         </CardTitle>
         {hasBlockers ? (
           <CardAction>
