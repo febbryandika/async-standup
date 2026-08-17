@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest'
 
-import { loginSchema, registerSchema, standupSchema } from '@/lib/validation'
+import {
+  createTeamSchema,
+  joinTeamSchema,
+  loginSchema,
+  registerSchema,
+  standupSchema,
+} from '@/lib/validation'
 
 const valid = {
   yesterday: 'Shipped the digest builder',
@@ -146,5 +152,78 @@ describe('registerSchema', () => {
         password: 'a'.repeat(129),
       }).success,
     ).toBe(false)
+  })
+})
+
+// SPEC §5.1 — the team schemas gate onboarding, the one surface where a user
+// has no team yet and every downstream invariant is still unset.
+describe('createTeamSchema', () => {
+  it('accepts a name and an explicit timezone', () => {
+    expect(
+      createTeamSchema.safeParse({ name: 'Kaizen Works', timezone: 'UTC' })
+        .success,
+    ).toBe(true)
+  })
+
+  it('defaults an omitted timezone to Asia/Tokyo', () => {
+    const result = createTeamSchema.safeParse({ name: 'Kaizen Works' })
+    expect(result.success && result.data.timezone).toBe('Asia/Tokyo')
+  })
+
+  it.each(['', '   '] as const)('rejects the empty name %o', (name) => {
+    expect(createTeamSchema.safeParse({ name }).success).toBe(false)
+  })
+
+  it('trims surrounding whitespace off the name', () => {
+    const result = createTeamSchema.safeParse({ name: '  Kaizen Works  ' })
+    expect(result.success && result.data.name).toBe('Kaizen Works')
+  })
+
+  it('rejects a name over 60 characters', () => {
+    expect(createTeamSchema.safeParse({ name: 'a'.repeat(61) }).success).toBe(
+      false,
+    )
+  })
+
+  it.each(['Not/AZone', 'Asia/Tokio', 'GMT+9', ''] as const)(
+    'rejects the unknown timezone %o',
+    (timezone) => {
+      // The regression guard that matters: todayInTimezone() throws a
+      // RangeError on an unknown zone, and a team has no edit surface, so a
+      // bad value here would break every one of its pages for good.
+      expect(
+        createTeamSchema.safeParse({ name: 'Kaizen Works', timezone }).success,
+      ).toBe(false)
+    },
+  )
+})
+
+describe('joinTeamSchema', () => {
+  it('accepts exactly 6 characters', () => {
+    expect(joinTeamSchema.safeParse({ inviteCode: 'K7M2QX' }).success).toBe(
+      true,
+    )
+  })
+
+  it.each(['K7M2Q', 'K7M2QXA', ''] as const)(
+    'rejects the %o-length code',
+    (inviteCode) => {
+      expect(joinTeamSchema.safeParse({ inviteCode }).success).toBe(false)
+    },
+  )
+
+  it('trims before measuring length', () => {
+    // A pasted code usually arrives with whitespace attached; trimming after
+    // the length check would reject it.
+    const result = joinTeamSchema.safeParse({ inviteCode: '  K7M2QX  ' })
+    expect(result.success && result.data.inviteCode).toBe('K7M2QX')
+  })
+
+  it('accepts a lowercase code', () => {
+    // Case folding is joinTeamAction's job, not the schema's — the schema must
+    // not reject what the action is about to normalise.
+    expect(joinTeamSchema.safeParse({ inviteCode: 'k7m2qx' }).success).toBe(
+      true,
+    )
   })
 })
