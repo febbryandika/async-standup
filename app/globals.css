@@ -62,7 +62,15 @@
   --muted-foreground: oklch(0.556 0 0);
   --accent: oklch(0.97 0 0);
   --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
+  /* Darkened from shadcn's default 0.577. SPEC §6.2 fails CI on serious axe
+     violations, and destructive is only ever used as text or as a light tint of
+     itself — never as a solid fill behind white — so the default red was too
+     light to carry the "Blocker" badge: #e7000b on its own 10% tint is 3.97:1
+     against a required 4.5:1. At 0.5 that badge is 4.95:1 and every other
+     destructive surface gains margin too (alert title 4.77 → 5.98, alert
+     description 4.54 → 5.52). The dark palette already passes at 4.64:1 and is
+     left alone. */
+  --destructive: oklch(0.5 0.245 27.325);
   --border: oklch(0.922 0 0);
   --input: oklch(0.922 0 0);
   --ring: oklch(0.708 0 0);
