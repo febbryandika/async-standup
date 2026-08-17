@@ -77,13 +77,26 @@ export function DatePicker({ date, blockersOnly, max }: DatePickerProps) {
 
       <Label htmlFor="feed-blockers" className="h-8">
         {/* A native checkbox rather than a Radix one: it submits itself with JS
-            off, which a button plus a hidden input only imitates. */}
+            off, which a button plus a hidden input only imitates.
+
+            Controlled, unlike the date field above, and deliberately not keyed.
+            It used to be `defaultChecked` with `key={String(blockersOnly)}`,
+            which meant every toggle re-mounted the input — and a re-mounted
+            element loses focus, dumping a keyboard user back to the top of the
+            document mid-filter. SPEC §6.2 asks for the toggle to be part of the
+            keyboard path; being thrown out of it on use is the opposite.
+
+            A checkbox has no half-entered state for a controlled value to
+            clobber, which is the one thing that rules the approach out for the
+            date input. The cost is that the box stays unticked for the length of
+            the navigation instead of ticking immediately — which is the truth:
+            aria-busy and the live region below are already saying the same
+            thing. It also fixes Back, which the key was there for. */}
         <input
-          key={String(blockersOnly)}
           id="feed-blockers"
           type="checkbox"
           name="blockers"
-          defaultChecked={blockersOnly}
+          checked={blockersOnly}
           className="size-4 accent-destructive"
           onChange={(event) => go(date, event.target.checked)}
         />

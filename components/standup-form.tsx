@@ -3,6 +3,7 @@
 import { startTransition, useActionState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
+import { LoaderCircle } from 'lucide-react'
 
 import { upsertStandupAction, type StandupState } from '@/actions/standups'
 import { standupSchema, type StandupInput } from '@/lib/validation'
@@ -23,9 +24,14 @@ const EMPTY_STATE: StandupState = {}
 
 type StandupFormProps = {
   standup: { yesterday: string; today: string; blockers: string | null } | null
+  /**
+   * SPEC §6.1's optimistic update. Called with the values the action is about to
+   * receive, so `TodayPanel` can put the card in the feed before the round trip.
+   */
+  onOptimisticSave: (values: StandupInput) => void
 }
 
-export function StandupForm({ standup }: StandupFormProps) {
+export function StandupForm({ standup, onOptimisticSave }: StandupFormProps) {
   const [state, formAction, isPending] = useActionState(
     upsertStandupAction,
     EMPTY_STATE,
@@ -49,7 +55,17 @@ export function StandupForm({ standup }: StandupFormProps) {
   const serverMessage = state.error ?? Object.values(state.fieldErrors ?? {})[0]
 
   function handleValid(values: StandupInput) {
-    startTransition(() => formAction(values))
+    // One transition for both. useOptimistic holds its value until the
+    // transition settles, and the transition does not settle until the action
+    // has returned *and* the router tree its revalidatePath produced has been
+    // applied — so the optimistic card is replaced by the real row in a single
+    // commit, with no window where the feed shows neither. A failed write calls
+    // no revalidatePath, the transition ends anyway, and the card simply reverts
+    // to the server's last word while the Alert below explains why.
+    startTransition(() => {
+      onOptimisticSave(values)
+      formAction(values)
+    })
   }
 
   return (
@@ -126,11 +142,21 @@ export function StandupForm({ standup }: StandupFormProps) {
           ) : null}
         </div>
 
+        {/* SPEC §6.2's "thumb-reachable": a grid item defaults to
+            justify-self: stretch, so leaving it alone below `sm` gives a
+            full-width button at the end of the form — which is where a thumb
+            already is on a phone. */}
         <Button
           type="submit"
           disabled={isPending}
-          className="justify-self-start"
+          className="sm:justify-self-start"
         >
+          {/* SPEC §6.1 asks for disabled + a spinner. The label already changes,
+              which is what a screen reader hears; the spinner is aria-hidden
+              because announcing it too would just say the same thing twice. */}
+          {isPending ? (
+            <LoaderCircle aria-hidden className="animate-spin" />
+          ) : null}
           {isPending ? 'Saving…' : 'Save standup'}
         </Button>
       </form>
