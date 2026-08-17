@@ -8,6 +8,10 @@ const NAV_LINKS = [
   { href: '/', label: 'Today' },
   { href: '/history', label: 'History' },
   { href: '/team', label: 'Team' },
+  // Unconditional, unlike Settings below: SPEC §3.6 makes the preview visible to
+  // every member, and the digest is this project's main deliverable — reachable
+  // only by typing the URL, it may as well not exist.
+  { href: '/team/digest-preview', label: 'Digest' },
 ] as const
 
 export default async function AppLayout({ children }: LayoutProps<'/'>) {
