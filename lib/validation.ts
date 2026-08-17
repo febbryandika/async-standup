@@ -1,5 +1,7 @@
 import { z } from 'zod'
 
+import { DEFAULT_TIMEZONE, isValidTimezone } from './timezones'
+
 // `z.string().trim().pipe(z.email())` rather than either obvious spelling:
 // `z.string().email()` is the deprecated v3 form, and `z.email().trim()`
 // validates before it trims, so a padded address would fail.
@@ -41,10 +43,27 @@ export const standupSchema = z.object({
 })
 
 export const joinTeamSchema = z.object({
-  inviteCode: z.string().trim().length(6),
+  // This message is client-side convenience only. `joinTeamAction` collapses
+  // every failure — wrong length, no such team — into one string, so the server
+  // never reveals which it was.
+  inviteCode: z.string().trim().length(6, 'Invite codes are 6 characters'),
 })
 
 export const createTeamSchema = z.object({
-  name: z.string().trim().min(1).max(60),
-  timezone: z.string().default('Asia/Tokyo'),
+  name: z
+    .string()
+    .trim()
+    .min(1, 'Enter a team name')
+    .max(60, 'Use 60 characters or fewer'),
+  // Refined, not just typed: `todayInTimezone` throws a RangeError on an
+  // unknown zone, and nothing downstream could recover from a team stored with
+  // one. `.default()` makes this field optional on input and required on
+  // output — hence `z.input<...>` for the form, below.
+  timezone: z
+    .string()
+    .refine(isValidTimezone, 'Choose a valid timezone')
+    .default(DEFAULT_TIMEZONE),
 })
+
+export type JoinTeamInput = z.infer<typeof joinTeamSchema>
+export type CreateTeamInput = z.input<typeof createTeamSchema>

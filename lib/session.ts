@@ -2,7 +2,7 @@ import 'server-only'
 
 import { cache } from 'react'
 import { headers } from 'next/headers'
-import { redirect } from 'next/navigation'
+import { notFound, redirect } from 'next/navigation'
 import { eq } from 'drizzle-orm'
 
 import { auth } from './auth'
@@ -30,13 +30,11 @@ export const requireUser = cache(async (): Promise<SessionUser> => {
 })
 
 /**
- * The entry point of every authenticated page and Server Action. Nothing
- * downstream re-derives identity, and no team id is ever read from the request.
- *
- * `cache()` means the layout, the page and any action in one render share a
- * single session lookup and a single join.
+ * The membership join without the redirect. `/onboarding` uses this to bounce a
+ * user who already has a team, which is the one place that needs to ask the
+ * question rather than assert the answer.
  */
-export const requireMember = cache(async (): Promise<Membership> => {
+export const getMembership = cache(async (): Promise<Membership | null> => {
   const user = await requireUser()
 
   const row = await db
@@ -47,7 +45,34 @@ export const requireMember = cache(async (): Promise<Membership> => {
     .limit(1)
     .then((rows) => rows[0])
 
-  if (!row) redirect('/onboarding')
+  if (!row) return null
 
   return { user, member: row.team_members, team: row.teams }
+})
+
+/**
+ * The entry point of every authenticated page and Server Action. Nothing
+ * downstream re-derives identity, and no team id is ever read from the request.
+ *
+ * `cache()` means the layout, the page and any action in one render share a
+ * single session lookup and a single join.
+ */
+export const requireMember = cache(async (): Promise<Membership> => {
+  const membership = await getMembership()
+  if (!membership) redirect('/onboarding')
+  return membership
+})
+
+/**
+ * SPEC §8: the admin gate runs server-side, not in the UI. Both `/team/settings`
+ * and `regenerateInviteCodeAction` go through here, so hiding the nav link is
+ * never what is actually protecting anything.
+ *
+ * notFound() rather than a redirect — a member has no business knowing the
+ * route exists.
+ */
+export const requireAdmin = cache(async (): Promise<Membership> => {
+  const membership = await requireMember()
+  if (membership.member.role !== 'admin') notFound()
+  return membership
 })
