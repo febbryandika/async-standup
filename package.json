@@ -14,8 +14,8 @@
     "format:check": "prettier --check .",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
-    "db:seed": "tsx scripts/seed.ts",
-    "db:reset": "docker compose exec -T db psql -U postgres -d async_standup -c 'DROP SCHEMA public CASCADE; CREATE SCHEMA public;' && pnpm db:migrate && pnpm db:seed"
+    "db:seed": "tsx --env-file-if-exists=.env scripts/seed.ts",
+    "db:reset": "docker compose exec -T db psql -U postgres -d async_standup -c 'DROP SCHEMA IF EXISTS drizzle CASCADE; DROP SCHEMA public CASCADE; CREATE SCHEMA public;' && pnpm db:migrate && pnpm db:seed"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.9.0",

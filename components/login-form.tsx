@@ -20,7 +20,17 @@ import {
 
 const EMPTY_STATE: AuthState = {}
 
-export function LoginForm() {
+type LoginFormProps = {
+  /**
+   * SPEC §10's one-click demo access. Passed down from the page rather than
+   * read here, because the credentials live in env vars only the server can
+   * see — and passed as one object so "email set, password missing" isn't a
+   * state this component has to have an opinion about.
+   */
+  demo?: { email: string; password: string }
+}
+
+export function LoginForm({ demo }: LoginFormProps) {
   const [state, formAction, isPending] = useActionState(
     signInAction,
     EMPTY_STATE,
@@ -38,6 +48,23 @@ export function LoginForm() {
 
   function handleValid(values: LoginInput) {
     startTransition(() => formAction(values))
+  }
+
+  // SPEC §10: fills both fields and submits. Filling them rather than signing
+  // in behind the scenes is the point — the reviewer sees which account they
+  // are being given, and the credentials are published in the README anyway.
+  function submitDemo({
+    email,
+    password,
+  }: {
+    email: string
+    password: string
+  }) {
+    // shouldValidate: false because handleSubmit runs the same resolver a
+    // moment later; validating twice only risks flashing an error mid-fill.
+    form.setValue('email', email, { shouldValidate: false })
+    form.setValue('password', password, { shouldValidate: false })
+    void form.handleSubmit(handleValid)()
   }
 
   return (
@@ -98,6 +125,19 @@ export function LoginForm() {
         <Button type="submit" disabled={isPending}>
           {isPending ? 'Signing in…' : 'Sign in'}
         </Button>
+
+        {/* type="button" keeps it out of the implicit-submit path, and the
+            shared disabled state stops a double click firing two sign-ins. */}
+        {demo ? (
+          <Button
+            type="button"
+            variant="outline"
+            disabled={isPending}
+            onClick={() => submitDemo(demo)}
+          >
+            Use demo account
+          </Button>
+        ) : null}
       </form>
     </Form>
   )
