@@ -108,3 +108,46 @@ export async function listMyStandups(
   // has in fact already ruled out.
   return { items, nextCursor: hasMore ? (items.at(-1)?.date ?? null) : null }
 }
+
+export type TeamMemberContact = {
+  userId: string
+  name: string
+  email: string
+}
+
+/**
+ * Every member of a team, with the address the digest is sent to. SPEC §5.5
+ * calls this `getMembersWithEmails`; renamed for the `list*` prefix the other
+ * collection queries here use — `get*` is for the singletons in lib/session.ts.
+ *
+ * Ordered exactly like `listTeamFeed`, id tiebreak included, so the digest lists
+ * people in the same order /team does. Not cosmetic: the email is that page by
+ * post, and two orders read as two different teams.
+ */
+export async function listTeamMembers(
+  teamId: string,
+): Promise<TeamMemberContact[]> {
+  return db
+    .select({ userId: user.id, name: user.name, email: user.email })
+    .from(teamMembers)
+    .innerJoin(user, eq(user.id, teamMembers.userId))
+    .where(eq(teamMembers.teamId, teamId))
+    .orderBy(asc(user.name), asc(user.id))
+}
+
+/**
+ * Every standup a team posted on one date, unjoined — deliberately not
+ * `listTeamFeed`'s LEFT JOIN. SPEC §5.5 hands `buildDigestHtml` members and
+ * standups as two arrays, and pairing them inside that pure function is exactly
+ * what the "marks missing members" unit test covers. Doing the join in SQL here
+ * would move that rule somewhere no unit test can reach.
+ */
+export async function listTeamStandups(
+  teamId: string,
+  date: string,
+): Promise<Standup[]> {
+  return db
+    .select()
+    .from(standups)
+    .where(and(eq(standups.teamId, teamId), eq(standups.date, date)))
+}
