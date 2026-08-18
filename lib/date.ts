@@ -65,3 +65,72 @@ export function formatDateLong(date: string): string {
     year: 'numeric',
   }).format(new Date(`${date}T00:00:00Z`))
 }
+
+/**
+ * When the next digest lands, in a team's own zone.
+ *
+ * `vercel.json` schedules the cron at `0 0 * * *`, so the send is 00:00 UTC —
+ * 09:00 in Asia/Tokyo, but not in anyone else's zone. Rendering a hardcoded
+ * "09:00" next to a configurable timezone would be a lie for every team that
+ * changed it, so the one fixed instant is what gets formatted.
+ *
+ * The *next* such instant rather than a fixed calendar date, because a zone
+ * that observes DST is an hour off for half the year otherwise.
+ */
+export function nextDigestInTimezone(
+  timeZone: string,
+  now: Date = new Date(),
+): { time: string; day: 'today' | 'tomorrow' } {
+  const next = new Date(now)
+  next.setUTCHours(0, 0, 0, 0)
+  if (next <= now) next.setUTCDate(next.getUTCDate() + 1)
+
+  const time = new Intl.DateTimeFormat('en-GB', {
+    timeZone,
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  }).format(next)
+
+  return {
+    time,
+    // Same team-local calendar day as right now, or the one after it.
+    day:
+      formatInTimezone(next, timeZone) === formatInTimezone(now, timeZone)
+        ? 'today'
+        : 'tomorrow',
+  }
+}
+
+function formatInTimezone(at: Date, timeZone: string): string {
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(at)
+}
+
+/** The same calendar date, `days` later (or earlier, for a negative count). */
+export function shiftDate(date: string, days: number): string {
+  const at = new Date(`${date}T00:00:00Z`)
+  at.setUTCDate(at.getUTCDate() + days)
+  return at.toISOString().slice(0, 10)
+}
+
+/** '2026-08-14' → '14 Aug'. For column headers, where the year is redundant. */
+export function formatDateShort(date: string): string {
+  return new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'UTC',
+    day: 'numeric',
+    month: 'short',
+  }).format(new Date(`${date}T00:00:00Z`))
+}
+
+/** '2026-08-14' → 'Fri'. */
+export function formatWeekdayShort(date: string): string {
+  return new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'UTC',
+    weekday: 'short',
+  }).format(new Date(`${date}T00:00:00Z`))
+}

@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   formatDateLong,
   isCalendarDate,
+  nextDigestInTimezone,
   parseCursorParam,
   parseDateParam,
   todayInTimezone,
@@ -134,4 +135,45 @@ describe('parseCursorParam', () => {
       expect(parseCursorParam(param)).toBeUndefined()
     },
   )
+})
+
+describe('nextDigestInTimezone', () => {
+  // The cron fires at 00:00 UTC. What a member sees is that instant rendered in
+  // their team's zone, so the hour is a property of the timezone, never a
+  // constant.
+  const AFTERNOON_IN_UTC = new Date('2026-08-18T13:00:00Z')
+
+  it('renders the cron slot in the team timezone', () => {
+    expect(nextDigestInTimezone('Asia/Tokyo', AFTERNOON_IN_UTC).time).toBe(
+      '09:00',
+    )
+    expect(nextDigestInTimezone('UTC', AFTERNOON_IN_UTC).time).toBe('00:00')
+    expect(
+      nextDigestInTimezone('America/New_York', AFTERNOON_IN_UTC).time,
+    ).toBe('20:00')
+  })
+
+  it('tracks daylight saving rather than a fixed offset', () => {
+    // Berlin is UTC+1 in January and UTC+2 in July. A helper built on one fixed
+    // calendar date is wrong for half the year.
+    expect(
+      nextDigestInTimezone('Europe/Berlin', new Date('2026-01-10T13:00:00Z'))
+        .time,
+    ).toBe('01:00')
+    expect(
+      nextDigestInTimezone('Europe/Berlin', new Date('2026-07-10T13:00:00Z'))
+        .time,
+    ).toBe('02:00')
+  })
+
+  it('is tomorrow in Tokyo but today in New York', () => {
+    // The same 2026-08-19T00:00Z send is the 19th at 09:00 in Tokyo — the next
+    // team-local day — and the 18th at 20:00 in New York, still today.
+    expect(nextDigestInTimezone('Asia/Tokyo', AFTERNOON_IN_UTC).day).toBe(
+      'tomorrow',
+    )
+    expect(nextDigestInTimezone('America/New_York', AFTERNOON_IN_UTC).day).toBe(
+      'today',
+    )
+  })
 })

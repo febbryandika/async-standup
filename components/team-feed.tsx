@@ -34,15 +34,27 @@ export function TeamFeed({
   // Covers the filtered case for free: with "blockers only" on and nothing to
   // show, entries is [] and [].some() is false.
   const hasAnyUpdate = entries.some((entry) => entry.standup !== null)
+  const posted = entries.filter((entry) => entry.standup).length
 
   return (
-    <section aria-labelledby="team-feed-heading" className="mt-10">
-      <h2 id="team-feed-heading" className="text-lg font-medium">
-        {heading}
-      </h2>
+    <section aria-labelledby="team-feed-heading">
+      <div className="mb-3.5 flex flex-wrap items-center gap-x-3 gap-y-1">
+        <h2
+          id="team-feed-heading"
+          className="text-[1.05rem] font-semibold tracking-tight"
+        >
+          {heading}
+        </h2>
+        <p className="text-muted-foreground text-[0.8rem]">
+          <time dateTime={date}>{formatDateLong(date)}</time>
+          {entries.length > 0
+            ? ` · ${posted} of ${entries.length} posted`
+            : null}
+        </p>
+      </div>
 
       {hasAnyUpdate ? null : (
-        <div className="mt-4">
+        <div className="mb-3.5">
           <EmptyState
             title={
               emptyMessage ??
@@ -58,10 +70,14 @@ export function TeamFeed({
           is dropped only when it is genuinely empty — the blockers filter — so
           the empty state does not trail four rems of nothing. */}
       {entries.length > 0 ? (
-        <ul className="mt-4 grid gap-4">
+        <ul className="grid gap-3.5">
           {entries.map((entry) => (
             <li key={entry.userId}>
-              <StandupCard heading={entry.name} standup={entry.standup} />
+              <StandupCard
+                heading={entry.name}
+                name={entry.name}
+                standup={entry.standup}
+              />
             </li>
           ))}
         </ul>

@@ -2,17 +2,11 @@ import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
 
 import { signOutAction } from '@/actions/auth'
-import { getMembership, requireUser } from '@/lib/session'
 import { CreateTeamForm } from '@/components/create-team-form'
 import { JoinTeamForm } from '@/components/join-team-form'
+import { SiteHeader } from '@/components/site-header'
 import { Button } from '@/components/ui/button'
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
+import { getMembership, requireUser } from '@/lib/session'
 
 export const metadata: Metadata = { title: 'Set up your team' }
 
@@ -26,51 +20,62 @@ export default async function OnboardingPage() {
   if (await getMembership()) redirect('/')
 
   return (
-    <main className="mx-auto max-w-3xl px-4 py-8">
-      <h1 className="text-lg font-medium">Set up your team</h1>
-      <p className="mt-2 text-sm text-muted-foreground">
-        Signed in as {user.email}. Start a team, or join one you were invited to
-        — you belong to exactly one.
-      </p>
+    <div className="flex min-h-dvh flex-col">
+      <SiteHeader />
 
-      <div className="mt-6 grid gap-4 md:grid-cols-2 md:items-start">
-        <Card>
-          <CardHeader>
-            {/* CardTitle renders a div, so the real heading goes inside it —
-                the page still needs an h1 → h2 outline. */}
-            <CardTitle>
-              <h2>Create a team</h2>
-            </CardTitle>
-            <CardDescription>
-              You&rsquo;ll be the admin, and you&rsquo;ll get an invite code to
-              share.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
+      <main className="mx-auto flex w-full max-w-4xl flex-col gap-6 px-4 py-10 md:py-12">
+        <div className="flex flex-col gap-2.5">
+          <span className="bg-muted text-muted-foreground self-start rounded-full px-2.5 py-1 text-[0.65rem] font-semibold tracking-wider uppercase">
+            Step 2 of 2
+          </span>
+          <h1 className="text-[1.75rem] leading-tight font-bold tracking-tight md:text-3xl">
+            Set up your team
+          </h1>
+          <p className="text-muted-foreground max-w-[60ch] text-sm text-pretty">
+            Signed in as {user.email}. Start a team and you&rsquo;re its admin,
+            or join one you were invited to — you belong to exactly one.
+          </p>
+        </div>
+
+        <div className="grid gap-5 md:grid-cols-2 md:items-start">
+          <section
+            aria-labelledby="create-team-heading"
+            className="bg-card shadow-card flex flex-col gap-4 rounded-2xl border p-5"
+          >
+            <div className="flex flex-col gap-1">
+              <h2 id="create-team-heading" className="text-base font-semibold">
+                Create a team
+              </h2>
+              <p className="text-muted-foreground text-sm">
+                You&rsquo;ll be the admin, and you&rsquo;ll get an invite code
+                to share.
+              </p>
+            </div>
             <CreateTeamForm />
-          </CardContent>
-        </Card>
+          </section>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>
-              <h2>Join a team</h2>
-            </CardTitle>
-            <CardDescription>
-              Already have an invite code? Enter it here.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
+          <section
+            aria-labelledby="join-team-heading"
+            className="bg-card shadow-card flex flex-col gap-4 rounded-2xl border p-5"
+          >
+            <div className="flex flex-col gap-1">
+              <h2 id="join-team-heading" className="text-base font-semibold">
+                Join a team
+              </h2>
+              <p className="text-muted-foreground text-sm">
+                Already have an invite code? Enter it here.
+              </p>
+            </div>
             <JoinTeamForm />
-          </CardContent>
-        </Card>
-      </div>
+          </section>
+        </div>
 
-      <form action={signOutAction} className="mt-6">
-        <Button type="submit" variant="ghost" size="sm">
-          Sign out
-        </Button>
-      </form>
-    </main>
+        <form action={signOutAction}>
+          <Button type="submit" variant="ghost" size="sm">
+            Sign out
+          </Button>
+        </form>
+      </main>
+    </div>
   )
 }

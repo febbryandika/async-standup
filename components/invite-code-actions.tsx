@@ -42,7 +42,7 @@ export function InviteCodeActions({ code }: { code: string }) {
 
   return (
     <div className="flex flex-wrap items-center gap-2">
-      <Button type="button" variant="outline" onClick={handleCopy}>
+      <Button type="button" variant="outline" size="lg" onClick={handleCopy}>
         {copied ? <CheckIcon /> : <CopyIcon />}
         {copied ? 'Copied' : 'Copy code'}
       </Button>
@@ -55,7 +55,7 @@ export function InviteCodeActions({ code }: { code: string }) {
 
       <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
         <DialogTrigger asChild>
-          <Button type="button" variant="ghost">
+          <Button type="button" variant="destructive" size="lg">
             Regenerate
           </Button>
         </DialogTrigger>

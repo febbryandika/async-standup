@@ -98,7 +98,14 @@ function FormLabel({
     <Label
       data-slot="form-label"
       data-error={Boolean(error)}
-      className={cn('data-[error=true]:text-destructive', className)}
+      // The design system's field label: small caps, tracked out, muted. Set
+      // here rather than at each call site because every form in the app wants
+      // it — this component is a hand-port, not an upstream file to keep in
+      // sync.
+      className={cn(
+        'text-[0.7rem] font-semibold tracking-[0.06em] text-muted-foreground uppercase data-[error=true]:text-destructive',
+        className,
+      )}
       htmlFor={formItemId}
       {...props}
     />

@@ -37,20 +37,20 @@ export default function Loading() {
   // `/`, `/history` and `/team` where it actually appears. Moving the guard out
   // of the layout would change that, and would be a restructure.
   return (
-    <main className="mx-auto max-w-3xl px-4 py-8">
-      {/* The heading and date line each stand in for one line box: text-lg is
-          1.75rem, text-sm is 1.25rem. */}
-      <Skeleton aria-hidden className="h-7 w-24" />
-      <Skeleton aria-hidden className="mt-2 h-5 w-64" />
+    <>
+      {/* One line box each for the heading and the meta line above it, at the
+          sizes PageHeader renders them. */}
+      <Skeleton aria-hidden className="h-4 w-52" />
+      <Skeleton aria-hidden className="mt-2 h-9 w-40" />
 
-      <div className="mt-10">
-        <Skeleton aria-hidden className="h-7 w-32" />
+      <div className="mt-8">
+        <Skeleton aria-hidden className="h-6 w-32" />
 
         {/* aria-hidden on the list, not on each card: hiding only the cards
             would leave four empty <li>s for a screen reader to count. Index
             keys are right here — a fixed-length run of identical, stateless
             nodes that never reorders. */}
-        <ul aria-hidden className="mt-4 grid gap-4">
+        <ul aria-hidden className="mt-3.5 grid gap-3.5">
           {Array.from({ length: PLACEHOLDER_CARDS }, (_, index) => (
             <li key={index}>
               <StandupSkeleton />
@@ -66,6 +66,6 @@ export default function Loading() {
       <p role="status" className="sr-only">
         Loading updates
       </p>
-    </main>
+    </>
   )
 }

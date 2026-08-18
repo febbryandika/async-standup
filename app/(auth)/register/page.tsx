@@ -2,36 +2,30 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 
 import { RegisterForm } from '@/components/register-form'
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
 
 export const metadata: Metadata = { title: 'Create account' }
 
 export default function RegisterPage() {
   return (
-    <main className="mx-auto max-w-md px-4 py-12">
-      <Card>
-        <CardHeader>
-          <CardTitle>Create account</CardTitle>
-          <CardDescription>
-            Start posting daily updates with your team.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="grid gap-4">
-          <RegisterForm />
-          <p className="text-sm text-muted-foreground">
-            Already have an account?{' '}
-            <Link href="/login" className="underline underline-offset-4">
-              Log in
-            </Link>
-          </p>
-        </CardContent>
-      </Card>
+    <main className="flex flex-col gap-5">
+      <div className="flex flex-col gap-1.5">
+        <h1 className="text-2xl font-bold tracking-tight">Create account</h1>
+        <p className="text-muted-foreground text-sm">
+          Takes about twenty seconds.
+        </p>
+      </div>
+
+      <RegisterForm />
+
+      <p className="text-muted-foreground text-sm">
+        Already have an account?{' '}
+        <Link
+          href="/login"
+          className="text-primary underline-offset-4 hover:underline"
+        >
+          Log in
+        </Link>
+      </p>
     </main>
   )
 }

@@ -45,7 +45,7 @@ export function JoinTeamForm() {
       <form
         noValidate
         onSubmit={form.handleSubmit(handleValid)}
-        className="grid gap-4"
+        className="grid gap-4 [&_button]:h-10 [&_input]:h-10 [&_select]:h-10"
       >
         <FormField
           control={form.control}
@@ -63,7 +63,7 @@ export function JoinTeamForm() {
                   spellCheck={false}
                   maxLength={6}
                   placeholder="K7M2QX"
-                  className="font-mono tracking-widest uppercase"
+                  className="h-13! font-mono text-xl font-bold tracking-[0.22em] uppercase"
                   {...field}
                 />
               </FormControl>
@@ -75,7 +75,10 @@ export function JoinTeamForm() {
           )}
         />
 
-        <div aria-live="polite">
+        {/* empty:sr-only, not conditional rendering: the region has to be in
+            the accessibility tree before it has anything to say, but an empty
+            one should not open a gap in the form. */}
+        <div aria-live="polite" className="empty:sr-only">
           {serverMessage ? (
             <Alert variant="destructive">
               <AlertDescription>{serverMessage}</AlertDescription>
@@ -83,7 +86,10 @@ export function JoinTeamForm() {
           ) : null}
         </div>
 
-        <Button type="submit" disabled={isPending}>
+        {/* Outline, against the solid Create team beside it: joining is the
+            second path, and two identical primary buttons make the choice
+            harder to read than it is. */}
+        <Button type="submit" variant="outline" disabled={isPending}>
           {isPending ? 'Joining team…' : 'Join team'}
         </Button>
       </form>

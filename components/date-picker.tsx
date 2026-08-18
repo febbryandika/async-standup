@@ -1,9 +1,11 @@
 'use client'
 
 import { useTransition } from 'react'
+import { ChevronLeft, ChevronRight } from 'lucide-react'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 
-import { isCalendarDate } from '@/lib/date'
+import { isCalendarDate, shiftDate } from '@/lib/date'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -38,6 +40,9 @@ export function DatePicker({ date, blockersOnly, max }: DatePickerProps) {
     startTransition(() => router.push(hrefFor(nextDate, nextBlockersOnly)))
   }
 
+  const previousDay = shiftDate(date, -1)
+  const nextDay = shiftDate(date, 1)
+
   return (
     // method="get" action="/team" is the whole no-JS story: the browser builds
     // the same query string from the same field names. The handlers below only
@@ -46,10 +51,15 @@ export function DatePicker({ date, blockersOnly, max }: DatePickerProps) {
       method="get"
       action="/team"
       aria-busy={isPending}
-      className="mt-6 flex flex-wrap items-end gap-4"
+      className="bg-card shadow-card mt-5 flex flex-wrap items-end gap-x-4 gap-y-3 rounded-2xl border px-4 py-3.5"
     >
       <div className="grid gap-1.5">
-        <Label htmlFor="feed-date">Date</Label>
+        <Label
+          htmlFor="feed-date"
+          className="text-[0.7rem] font-semibold tracking-[0.06em] text-muted-foreground uppercase"
+        >
+          Date
+        </Label>
         <Input
           // Uncontrolled, so a half-entered date is never clobbered mid-edit,
           // but keyed on the value the server rendered so a Back navigation
@@ -108,6 +118,34 @@ export function DatePicker({ date, blockersOnly, max }: DatePickerProps) {
       <Button type="submit" variant="outline" size="sm" disabled={isPending}>
         Apply
       </Button>
+
+      {/* After the submit button in DOM order on purpose: SPEC §6.2's keyboard
+          path for this page is Date → Blockers only → Apply, and these are a
+          shortcut on top of it, not a step in it. Plain links, so they are the
+          same server render the form produces and work with JS off. */}
+      <div className="ms-auto flex items-center gap-1">
+        <Button asChild variant="ghost" size="icon-sm">
+          <Link href={hrefFor(previousDay, blockersOnly)}>
+            <ChevronLeft aria-hidden className="size-4" strokeWidth={1.9} />
+            <span className="sr-only">Previous day</span>
+          </Link>
+        </Button>
+
+        {nextDay <= max ? (
+          <Button asChild variant="ghost" size="icon-sm">
+            <Link href={hrefFor(nextDay, blockersOnly)}>
+              <ChevronRight aria-hidden className="size-4" strokeWidth={1.9} />
+              <span className="sr-only">Next day</span>
+            </Link>
+          </Button>
+        ) : null}
+
+        {date === max ? null : (
+          <Button asChild variant="outline" size="sm">
+            <Link href={hrefFor(max, blockersOnly)}>Jump to today</Link>
+          </Button>
+        )}
+      </div>
 
       <span aria-live="polite" className="sr-only">
         {isPending ? 'Loading updates' : ''}

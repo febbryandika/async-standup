@@ -4,12 +4,16 @@ import { useOptimistic } from 'react'
 
 import { StandupForm } from '@/components/standup-form'
 import { TeamFeed, type FeedEntry } from '@/components/team-feed'
+import { TeamPulse } from '@/components/team-pulse'
+import { TeamSummary } from '@/components/team-summary'
 import type { StandupInput } from '@/lib/validation'
 
 type TodayPanelProps = {
   date: string
   /** The signed-in user, so the reducer knows which row is theirs to replace. */
   userId: string
+  /** Only for the composer's avatar — the row itself is found by id. */
+  userName: string
   entries: FeedEntry[]
 }
 
@@ -50,7 +54,12 @@ function applyMyUpdate(
  * call and hands the rows down. This is a client boundary around presentation,
  * not a client data layer — nothing here fetches.
  */
-export function TodayPanel({ date, userId, entries }: TodayPanelProps) {
+export function TodayPanel({
+  date,
+  userId,
+  userName,
+  entries,
+}: TodayPanelProps) {
   const [optimisticEntries, showMyUpdate] = useOptimistic(
     entries,
     (current: FeedEntry[], values: StandupInput) =>
@@ -64,14 +73,28 @@ export function TodayPanel({ date, userId, entries }: TodayPanelProps) {
 
   return (
     <>
-      <section aria-labelledby="your-update-heading" className="mt-6">
-        <h2 id="your-update-heading" className="sr-only">
-          Your update
-        </h2>
-        <StandupForm standup={mine} onOptimisticSave={showMyUpdate} />
-      </section>
+      {/* Reads the optimistic copy, so the counts move the moment you post
+          rather than a round trip later. */}
+      <TeamPulse entries={optimisticEntries} />
 
-      <TeamFeed date={date} entries={optimisticEntries} />
+      <div className="mt-5 grid items-start gap-5 lg:grid-cols-[minmax(0,1.55fr)_minmax(0,1fr)]">
+        <div className="flex min-w-0 flex-col gap-6">
+          <section aria-labelledby="your-update-heading">
+            <h2 id="your-update-heading" className="sr-only">
+              Your update
+            </h2>
+            <StandupForm
+              standup={mine}
+              userName={userName}
+              onOptimisticSave={showMyUpdate}
+            />
+          </section>
+
+          <TeamFeed date={date} entries={optimisticEntries} />
+        </div>
+
+        <TeamSummary entries={optimisticEntries} />
+      </div>
     </>
   )
 }

@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 
+import { PageHeader } from '@/components/page-header'
 import { TodayPanel } from '@/components/today-panel'
 import { formatDateLong, todayInTimezone } from '@/lib/date'
 import { listTeamFeed } from '@/lib/queries'
@@ -19,13 +20,24 @@ export default async function TodayPage() {
   const entries = await listTeamFeed(team.id, date)
 
   return (
-    <main className="mx-auto max-w-3xl px-4 py-8">
-      <h1 className="text-lg font-medium">Today</h1>
-      <p className="mt-2 text-sm text-muted-foreground">
-        <time dateTime={date}>{formatDateLong(date)}</time> · {team.timezone}
-      </p>
+    <>
+      <PageHeader
+        meta={
+          <>
+            <time dateTime={date}>{formatDateLong(date)}</time>
+            <span aria-hidden>·</span>
+            {team.timezone}
+          </>
+        }
+        title="Today"
+      />
 
-      <TodayPanel date={date} userId={user.id} entries={entries} />
-    </main>
+      <TodayPanel
+        date={date}
+        userId={user.id}
+        userName={user.name}
+        entries={entries}
+      />
+    </>
   )
 }
