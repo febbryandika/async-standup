@@ -56,6 +56,15 @@ function seriousViolations(
  * fields, and a test that breaks when a nav link is added is testing the nav.
  */
 async function tabTo(page: Page, target: Locator, limit = 25): Promise<void> {
+  // Before the first Tab, not as a formality. These routes stream behind
+  // app/(app)/loading.tsx, and React delivers the real markup inside a
+  // `<div hidden>` that inline script relocates once the boundary resolves.
+  // page.goto resolves on `load`, which can land while the skeleton is still on
+  // screen — and a form parked in that hidden div is in the DOM but not in the
+  // tab order, so the search below walks the nav twice and gives up. Waiting on
+  // visibility is waiting for the swap.
+  await expect(target).toBeVisible()
+
   for (let step = 0; step < limit; step++) {
     await page.keyboard.press('Tab')
     if (await target.evaluate((node) => node === document.activeElement)) return
@@ -180,6 +189,10 @@ test.describe('mobile', () => {
   test('the standup form is one column at 375px', async ({ page }) => {
     await page.setViewportSize({ width: IPHONE_WIDTH, height: 812 })
     await page.goto('/')
+
+    // Same streaming swap as tabTo: boundingBox() is null while the form is
+    // still inside the hidden staging div.
+    await expect(page.getByLabel('Yesterday')).toBeVisible()
 
     const yesterday = await page.getByLabel('Yesterday').boundingBox()
     const today = await page.getByLabel('Today', { exact: true }).boundingBox()
