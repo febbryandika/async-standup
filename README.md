@@ -1,5 +1,7 @@
 # Async Standup
 
+[![CI](https://github.com/febbryandika/async-standup/actions/workflows/ci.yml/badge.svg)](https://github.com/febbryandika/async-standup/actions/workflows/ci.yml)
+
 Async standup for distributed teams: post a daily update, get the team's digest by email each morning.
 
 ## Running locally

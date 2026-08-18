@@ -1,0 +1,111 @@
+name: CI
+
+# SPEC §12: "on every push". Deliberately not also `pull_request` — for a
+# same-repo branch that fires a second, identical run of everything below.
+on:
+  push:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    name: Lint, typecheck, unit tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # Before setup-node: `cache: pnpm` shells out to pnpm to locate the store,
+      # so pnpm has to already be on PATH. No version pin here — action-setup
+      # reads `packageManager` out of package.json.
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm lint
+      - run: pnpm typecheck
+      # The `unit` project only. A bare `vitest run` would also start the
+      # integration project, which needs the database this job does not have.
+      - run: pnpm test
+
+  e2e:
+    name: Integration and E2E (Postgres)
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        # Same tag as docker-compose.yml, so CI and a laptop disagree about as
+        # little as possible.
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: async_standup
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d async_standup"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    # Job-level rather than per-step: lib/db/index.ts throws at *import* time
+    # without DATABASE_URL, and `next build` imports the route modules — so the
+    # build needs it just as much as the tests do. NEXT_PUBLIC_* is inlined at
+    # build time, which is the other reason this cannot live on the test steps.
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/async_standup
+      # Throwaway values for a database that is destroyed with the runner.
+      # Nothing here is a secret, and nothing here is reachable from outside it.
+      BETTER_AUTH_SECRET: ci-only-not-a-real-secret
+      BETTER_AUTH_URL: http://localhost:3000
+      # Both are required, or the login page does not render its "Use demo
+      # account" button and tests/e2e/a11y.spec.ts has no way to sign in.
+      NEXT_PUBLIC_DEMO_EMAIL: demo@example.com
+      DEMO_PASSWORD: demo1234
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+
+      # chromium only — playwright.config.ts declares no other project.
+      - name: Install Playwright browser
+        run: pnpm exec playwright install --with-deps chromium
+
+      # Not `pnpm db:reset`: that shells out to `docker compose exec db`, and a
+      # services: container is not a compose service.
+      - name: Migrate
+        run: pnpm db:migrate
+
+      # Before the seed, not after. The fixtures are already collision-proof and
+      # clean up after themselves, so this is about the failure case: a run that
+      # dies mid-test leaves rows behind, and the seed that follows truncates
+      # them. Playwright therefore always starts from a byte-identical database.
+      - name: Integration tests
+        run: pnpm test:integration
+
+      - name: Seed
+        run: pnpm db:seed
+
+      # playwright.config.ts starts `pnpm start` on CI, so the build has to
+      # exist before the suite does anything.
+      - name: Build
+        run: pnpm build
+
+      - name: E2E tests
+        run: pnpm test:e2e
+
+      - uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7
