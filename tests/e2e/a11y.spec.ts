@@ -123,6 +123,27 @@ test.describe('axe', () => {
       .analyze()
     expect(seriousViolations(violations)).toEqual([])
   })
+
+  // The dark palette is a second set of colours behind the same markup, so the
+  // only rules it can newly fail are the contrast ones — which is exactly why
+  // it needs a run of its own. The theme is a cookie read by the root layout,
+  // so setting it is the whole setup.
+  test('/ has no serious violations in the dark theme', async ({
+    page,
+    context,
+  }) => {
+    await context.addCookies([
+      { name: 'theme', value: 'dark', url: 'http://localhost:3000' },
+    ])
+    await page.goto('/')
+    await expect(page.locator('html')).toHaveClass(/dark/)
+    await expect(page.getByRole('heading', { name: 'Today' })).toBeVisible()
+
+    const { violations } = await new AxeBuilder({ page })
+      .withTags(WCAG)
+      .analyze()
+    expect(seriousViolations(violations)).toEqual([])
+  })
 })
 
 test.describe('keyboard path', () => {
