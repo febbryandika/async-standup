@@ -1,10 +1,21 @@
 import 'server-only'
 
-import { and, asc, desc, eq, isNotNull, lt } from 'drizzle-orm'
+import {
+  and,
+  asc,
+  count,
+  desc,
+  eq,
+  inArray,
+  isNotNull,
+  lt,
+  max,
+} from 'drizzle-orm'
 
 import { db } from './db'
 import { user } from './db/auth-schema'
 import { standups, teamMembers } from './db/schema'
+import type { AttendanceRecord } from './attendance'
 
 type Standup = typeof standups.$inferSelect
 
@@ -113,6 +124,7 @@ export type TeamMemberContact = {
   userId: string
   name: string
   email: string
+  role: 'member' | 'admin'
 }
 
 /**
@@ -128,7 +140,14 @@ export async function listTeamMembers(
   teamId: string,
 ): Promise<TeamMemberContact[]> {
   return db
-    .select({ userId: user.id, name: user.name, email: user.email })
+    .select({
+      userId: user.id,
+      name: user.name,
+      email: user.email,
+      // Only /team/settings reads this. It rides along rather than paying for a
+      // second query, and the digest simply ignores the extra column.
+      role: teamMembers.role,
+    })
     .from(teamMembers)
     .innerJoin(user, eq(user.id, teamMembers.userId))
     .where(eq(teamMembers.teamId, teamId))
@@ -150,4 +169,64 @@ export async function listTeamStandups(
     .select()
     .from(standups)
     .where(and(eq(standups.teamId, teamId), eq(standups.date, date)))
+}
+
+/**
+ * How many people the digest goes to. A count rather than `listTeamMembers().length`
+ * because the app shell renders it on every navigation and has no use for the rows.
+ */
+export async function countTeamMembers(teamId: string): Promise<number> {
+  const [row] = await db
+    .select({ total: count() })
+    .from(teamMembers)
+    .where(eq(teamMembers.teamId, teamId))
+
+  return row?.total ?? 0
+}
+
+/**
+ * Whether each member posted on each of `dates`, and whether that post carried
+ * a blocker. One `IN` over `idx_standup_team_date` serves both callers — the
+ * 14-day grid on /team and the 10-day strip in team settings.
+ *
+ * Rows only for days that were posted. Pairing them back against the member
+ * list is `buildAttendanceGrid`'s job, for the same reason the digest pairs its
+ * own two arrays: the "never posted at all" member has to survive, and a join
+ * is where that member disappears.
+ */
+export async function listTeamAttendance(
+  teamId: string,
+  dates: readonly string[],
+): Promise<AttendanceRecord[]> {
+  if (dates.length === 0) return []
+
+  const rows = await db
+    .select({
+      userId: standups.userId,
+      date: standups.date,
+      blockers: standups.blockers,
+    })
+    .from(standups)
+    .where(and(eq(standups.teamId, teamId), inArray(standups.date, [...dates])))
+
+  return rows.map((row) => ({
+    userId: row.userId,
+    date: row.date,
+    blocked: row.blockers !== null,
+  }))
+}
+
+export type LastPosted = { userId: string; date: string | null }
+
+/**
+ * The most recent date each member posted, over all of history — not just the
+ * window the grid shows, so "last posted" can honestly say "never" instead of
+ * "not in the last ten weekdays".
+ */
+export async function listLastPosted(teamId: string): Promise<LastPosted[]> {
+  return db
+    .select({ userId: standups.userId, date: max(standups.date) })
+    .from(standups)
+    .where(eq(standups.teamId, teamId))
+    .groupBy(standups.userId)
 }
