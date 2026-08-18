@@ -49,7 +49,7 @@ export function CreateTeamForm() {
       <form
         noValidate
         onSubmit={form.handleSubmit(handleValid)}
-        className="grid gap-4"
+        className="grid gap-4 [&_button]:h-10 [&_input]:h-10 [&_select]:h-10"
       >
         <FormField
           control={form.control}
@@ -93,7 +93,10 @@ export function CreateTeamForm() {
           )}
         />
 
-        <div aria-live="polite">
+        {/* empty:sr-only, not conditional rendering: the region has to be in
+            the accessibility tree before it has anything to say, but an empty
+            one should not open a gap in the form. */}
+        <div aria-live="polite" className="empty:sr-only">
           {serverMessage ? (
             <Alert variant="destructive">
               <AlertDescription>{serverMessage}</AlertDescription>

@@ -16,8 +16,8 @@ type AppErrorProps = {
 /**
  * SPEC §6.1: the boundary behind the team feed and history, with the Retry the
  * table asks for. This renders inside `(app)/layout.tsx`, so it inherits the nav
- * — but a layout is not a page, and the `<main>` and `<h1>` the route would have
- * supplied are gone with it. They are supplied here.
+ * — including its `<main>`. The `<h1>` the route would have supplied is gone
+ * with the page, so it is supplied here.
  *
  * `error` is not rendered. An error thrown in a Server Component reaches the
  * client as a generic message plus a digest by design, so printing it would show
@@ -38,19 +38,21 @@ export default function AppError({ retry }: AppErrorProps) {
   }
 
   return (
-    <main className="mx-auto max-w-3xl px-4 py-8">
-      <h1 className="text-lg font-medium">Something went wrong</h1>
+    <>
+      <h1 className="text-[1.75rem] leading-tight font-bold tracking-tight md:text-3xl">
+        Something went wrong
+      </h1>
 
       <div className="mt-6">
         <ErrorState
           title="We couldn't load this page"
           description="The problem is usually temporary. Trying again will re-run the query."
         >
-          <Button type="button" onClick={handleRetry}>
+          <Button type="button" onClick={handleRetry} size="lg">
             Retry
           </Button>
         </ErrorState>
       </div>
-    </main>
+    </>
   )
 }

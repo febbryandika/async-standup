@@ -1,8 +1,6 @@
 import type { ReactNode } from 'react'
 import { TriangleAlert } from 'lucide-react'
 
-import { Card, CardContent } from '@/components/ui/card'
-
 type ErrorStateProps = {
   title: string
   description: string
@@ -14,27 +12,28 @@ type ErrorStateProps = {
  * SPEC §6.1's error surface, shared by `app/(app)/error.tsx` and
  * `app/not-found.tsx` so a broken page and a missing one read as one system.
  *
- * Deliberately the same centred card as `EmptyState` rather than an `Alert`.
- * `Alert` is a compact inline strip whose grid reflows around a leading icon —
- * good for the form-level write failure it already carries in `StandupForm`, and
- * the wrong shape for a whole page that has nothing else on it. The icon and the
- * copy carry the meaning; the destructive tint is reinforcement, not the signal.
+ * Deliberately the same centred shape as `EmptyState`, but on a solid card
+ * rather than a dashed outline: an empty list is a normal state, a failed one is
+ * not. It is not an `Alert` — that is a compact inline strip whose grid reflows
+ * around a leading icon, good for the form-level write failure `StandupForm`
+ * already carries and the wrong shape for a whole page with nothing else on it.
+ * The icon and the copy carry the meaning; the destructive tint is
+ * reinforcement, not the signal.
  */
 export function ErrorState({ title, description, children }: ErrorStateProps) {
   return (
-    <Card>
-      <CardContent className="flex flex-col items-center gap-2 py-6 text-center">
-        <TriangleAlert
-          aria-hidden
-          className="size-6 text-destructive"
-          strokeWidth={1.5}
-        />
-        <p className="font-medium">{title}</p>
-        <p className="text-sm text-balance text-muted-foreground">
-          {description}
-        </p>
-        {children ? <div className="mt-2">{children}</div> : null}
-      </CardContent>
-    </Card>
+    <div className="bg-card shadow-card flex flex-col items-center gap-2.5 rounded-2xl border px-5 py-11 text-center">
+      <span
+        aria-hidden
+        className="bg-destructive/10 text-destructive grid size-12 place-items-center rounded-2xl"
+      >
+        <TriangleAlert className="size-5.5" strokeWidth={1.6} />
+      </span>
+      <p className="text-[1.05rem] font-semibold">{title}</p>
+      <p className="text-muted-foreground max-w-[44ch] text-sm text-balance">
+        {description}
+      </p>
+      {children ? <div className="mt-2">{children}</div> : null}
+    </div>
   )
 }

@@ -1,12 +1,13 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 
+import { EmptyState } from '@/components/empty-state'
+import { PageHeader } from '@/components/page-header'
+import { StandupCard } from '@/components/standup-card'
+import { Button } from '@/components/ui/button'
 import { formatDateLong, parseCursorParam } from '@/lib/date'
 import { listMyStandups } from '@/lib/queries'
 import { requireMember } from '@/lib/session'
-import { Button } from '@/components/ui/button'
-import { EmptyState } from '@/components/empty-state'
-import { StandupCard } from '@/components/standup-card'
 
 export const metadata: Metadata = { title: 'History' }
 
@@ -20,15 +21,15 @@ export default async function HistoryPage({
   const { items, nextCursor } = await listMyStandups(user.id, before)
 
   return (
-    <main className="mx-auto max-w-3xl px-4 py-8">
-      <h1 className="text-lg font-medium">History</h1>
-      <p className="mt-2 text-sm text-muted-foreground">
-        Your updates, newest first.
-      </p>
+    <>
+      <PageHeader
+        title="History"
+        description="Every update you have posted, newest first — gaps included, because they are the interesting part."
+      />
 
       {/* The cards carry <h3>s, so the list needs an <h2> above them or the
           heading order skips a level. Visually the <h1> already says it. */}
-      <section aria-labelledby="history-heading">
+      <section aria-labelledby="history-heading" className="mt-6">
         <h2 id="history-heading" className="sr-only">
           Past updates
         </h2>
@@ -37,23 +38,27 @@ export default async function HistoryPage({
           // Two empty states, not one: reaching the end of the cursor is a
           // different thing from never having posted, and only the second one
           // should send someone to the form.
-          <div className="mt-6">
-            {before ? (
-              <EmptyState title="No older updates">
-                <Link href="/history" className="underline">
-                  Back to the newest
-                </Link>
-              </EmptyState>
-            ) : (
-              <EmptyState title="No standups yet">
-                <Link href="/" className="underline">
-                  Post your first one
-                </Link>
-              </EmptyState>
-            )}
-          </div>
+          before ? (
+            <EmptyState title="No older updates">
+              <Link
+                href="/history"
+                className="text-primary underline-offset-4 hover:underline"
+              >
+                Back to the newest
+              </Link>
+            </EmptyState>
+          ) : (
+            <EmptyState title="No standups yet">
+              <Link
+                href="/"
+                className="text-primary underline-offset-4 hover:underline"
+              >
+                Post your first one
+              </Link>
+            </EmptyState>
+          )
         ) : (
-          <ul className="mt-6 grid gap-4">
+          <ul className="grid max-w-3xl gap-3.5">
             {items.map((standup) => (
               <li key={standup.id}>
                 <StandupCard
@@ -72,11 +77,11 @@ export default async function HistoryPage({
         {nextCursor ? (
           // SPEC §3.5: a plain link, so each page is its own server render and
           // "Load older" still works with JavaScript disabled.
-          <Button asChild variant="outline" className="mt-6">
+          <Button asChild variant="outline" size="lg" className="mt-5">
             <Link href={`/history?before=${nextCursor}`}>Load older</Link>
           </Button>
         ) : null}
       </section>
-    </main>
+    </>
   )
 }
